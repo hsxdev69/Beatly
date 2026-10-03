@@ -1,0 +1,5 @@
+package com.echomusic.flutter.echo_music_flutter
+
+import io.flutter.embedding.android.FlutterActivity
+
+class MainActivity : FlutterActivity()
