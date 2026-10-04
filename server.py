@@ -101,7 +101,6 @@ class EchoMusicHandler(http.server.SimpleHTTPRequestHandler):
             # Strategy 1: yt_dlp direct stream resolver
             try:
                 import yt_dlp
-                target = f"https://www.youtube.com/watch?v={vid}" if (vid and len(vid) == 11 and ' ' not in vid) else f"ytsearch1:{query or vid}"
                 ydl_opts = {
                     'format': 'bestaudio[ext=m4a]/bestaudio/best',
                     'quiet': True,
@@ -109,13 +108,24 @@ class EchoMusicHandler(http.server.SimpleHTTPRequestHandler):
                     'noplaylist': True,
                 }
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    info = ydl.extract_info(target, download=False)
-                    entry = info['entries'][0] if 'entries' in info else info
-                    resolved = entry.get('url')
-                    if resolved:
-                        stream_url = resolved
-                        duration_sec = int(entry.get('duration', 240))
-                        mime_type = 'audio/mp4' if entry.get('ext') == 'm4a' else 'audio/webm'
+                    info = None
+                    if vid and len(vid) == 11 and ' ' not in vid:
+                        try:
+                            info = ydl.extract_info(f"https://www.youtube.com/watch?v={vid}", download=False)
+                        except Exception:
+                            info = None
+                    if not info and (query or vid):
+                        try:
+                            info = ydl.extract_info(f"ytsearch1:{query or vid}", download=False)
+                        except Exception:
+                            info = None
+                    if info:
+                        entry = info['entries'][0] if 'entries' in info else info
+                        resolved = entry.get('url')
+                        if resolved:
+                            stream_url = resolved
+                            duration_sec = int(entry.get('duration', 240))
+                            mime_type = 'audio/mp4' if entry.get('ext') == 'm4a' else 'audio/webm'
             except Exception as e:
                 print(f"[StreamResolver] yt_dlp exception: {e}")
 

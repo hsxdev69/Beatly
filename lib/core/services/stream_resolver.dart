@@ -36,39 +36,56 @@ class StreamResolver {
 
   /// Resolves a videoId or song title into a real playable audio stream (audio/webm or audio/mp4).
   /// Strictly extracts real YouTube/InnerTube audio stream URLs directly on-device.
-  /// Throws [StreamResolutionException] if stream cannot be resolved.
+  /// Falls back to searching YouTube if a direct videoId is removed, region-locked, or blocked.
   Future<StreamInfo> resolveStream(
     String videoId, {
     String? title,
     String? artist,
     String? fallbackUrl,
   }) async {
-    final query = [title, artist].where((s) => s != null && s.isNotEmpty).join(' ');
+    final query = [title, artist].where((s) => s != null && s.isNotEmpty).join(' ').trim();
 
     // Strategy 1: Direct on-device YouTube extraction via YoutubeExplode (No server needed!)
     try {
-      String targetId = videoId;
-      // If videoId is an iTunes trackId (digits only) or empty, search YouTube for the song
-      if (targetId.isEmpty || int.tryParse(targetId) != null || targetId.contains(' ')) {
-        if (query.isNotEmpty) {
-          final searchResults = await _yt.search.search(query);
-          if (searchResults.isNotEmpty) {
-            targetId = searchResults.first.id.value;
+      // 1A. If we have a plausible 11-char YouTube video ID, try it first
+      if (videoId.isNotEmpty && videoId.length == 11 && int.tryParse(videoId) == null && !videoId.contains(' ')) {
+        try {
+          final manifest = await _yt.videos.streamsClient.getManifest(videoId);
+          final audioOnly = manifest.audioOnly;
+          if (audioOnly.isNotEmpty) {
+            final best = audioOnly.withHighestBitrate();
+            return StreamInfo(
+              url: best.url.toString(),
+              mimeType: best.codec.mimeType,
+              bitrate: best.bitrate.bitsPerSecond,
+              duration: const Duration(minutes: 3, seconds: 30),
+            );
           }
+        } catch (idErr) {
+          debugPrint('[StreamResolver] Video ID $videoId blocked or unavailable, searching by title: $idErr');
         }
       }
 
-      if (targetId.isNotEmpty && targetId.length == 11) {
-        final manifest = await _yt.videos.streamsClient.getManifest(targetId);
-        final audioOnly = manifest.audioOnly;
-        if (audioOnly.isNotEmpty) {
-          final bestAudio = audioOnly.withHighestBitrate();
-          return StreamInfo(
-            url: bestAudio.url.toString(),
-            mimeType: bestAudio.codec.mimeType,
-            bitrate: bestAudio.bitrate.bitsPerSecond,
-            duration: const Duration(minutes: 3, seconds: 30),
-          );
+      // 1B. Smart Search Fallback: Search YouTube by title + artist to find active playable video
+      final searchQuery = query.isNotEmpty ? query : videoId;
+      if (searchQuery.isNotEmpty) {
+        final searchResults = await _yt.search.search(searchQuery);
+        for (final video in searchResults.take(4)) {
+          try {
+            final manifest = await _yt.videos.streamsClient.getManifest(video.id);
+            final audioOnly = manifest.audioOnly;
+            if (audioOnly.isNotEmpty) {
+              final best = audioOnly.withHighestBitrate();
+              return StreamInfo(
+                url: best.url.toString(),
+                mimeType: best.codec.mimeType,
+                bitrate: best.bitrate.bitsPerSecond,
+                duration: video.duration ?? const Duration(minutes: 3, seconds: 30),
+              );
+            }
+          } catch (_) {
+            continue; // Try next search result if this video is restricted
+          }
         }
       }
     } catch (e) {
@@ -109,7 +126,7 @@ class StreamResolver {
           final res = await _client.get(
             Uri.parse('$instance/streams/$videoId'),
             headers: {'User-Agent': 'EchoMusic/1.0'},
-          ).timeout(const Duration(seconds: 4));
+          ).timeout(const Duration(seconds: 3));
 
           if (res.statusCode == 200) {
             final data = json.decode(res.body);
