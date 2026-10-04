@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 import '../constants/api_constants.dart';
 
 class StreamResolutionException implements Exception {
@@ -27,12 +28,15 @@ class StreamInfo {
 
 class StreamResolver {
   final http.Client _client;
+  final YoutubeExplode _yt;
 
-  StreamResolver([http.Client? client]) : _client = client ?? http.Client();
+  StreamResolver({http.Client? client, YoutubeExplode? yt})
+      : _client = client ?? http.Client(),
+        _yt = yt ?? YoutubeExplode();
 
   /// Resolves a videoId or song title into a real playable audio stream (audio/webm or audio/mp4).
-  /// Strictly extracts real YouTube/InnerTube audio stream URLs.
-  /// Throws [StreamResolutionException] if stream cannot be resolved — never falls back to mock audio.
+  /// Strictly extracts real YouTube/InnerTube audio stream URLs directly on-device.
+  /// Throws [StreamResolutionException] if stream cannot be resolved.
   Future<StreamInfo> resolveStream(
     String videoId, {
     String? title,
@@ -41,12 +45,42 @@ class StreamResolver {
   }) async {
     final query = [title, artist].where((s) => s != null && s.isNotEmpty).join(' ');
 
-    // Strategy 1: Local development API server resolver (powered by yt-dlp & InnerTube)
+    // Strategy 1: Direct on-device YouTube extraction via YoutubeExplode (No server needed!)
+    try {
+      String targetId = videoId;
+      // If videoId is an iTunes trackId (digits only) or empty, search YouTube for the song
+      if (targetId.isEmpty || int.tryParse(targetId) != null || targetId.contains(' ')) {
+        if (query.isNotEmpty) {
+          final searchResults = await _yt.search.search(query);
+          if (searchResults.isNotEmpty) {
+            targetId = searchResults.first.id.value;
+          }
+        }
+      }
+
+      if (targetId.isNotEmpty && targetId.length == 11) {
+        final manifest = await _yt.videos.streamsClient.getManifest(targetId);
+        final audioOnly = manifest.audioOnly;
+        if (audioOnly.isNotEmpty) {
+          final bestAudio = audioOnly.withHighestBitrate();
+          return StreamInfo(
+            url: bestAudio.url.toString(),
+            mimeType: bestAudio.codec.mimeType,
+            bitrate: bestAudio.bitrate.bitsPerSecond,
+            duration: const Duration(minutes: 3, seconds: 30),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('[StreamResolver] YoutubeExplode error: $e');
+    }
+
+    // Strategy 2: Local development API server resolver (if running)
     try {
       final uri = Uri.parse(
         '${ApiConstants.apiBaseUrl}/api/stream?id=${Uri.encodeComponent(videoId)}&q=${Uri.encodeComponent(query)}',
       );
-      final res = await _client.get(uri).timeout(const Duration(seconds: 10));
+      final res = await _client.get(uri).timeout(const Duration(seconds: 4));
 
       if (res.statusCode == 200) {
         final data = json.decode(res.body);
@@ -60,24 +94,22 @@ class StreamResolver {
           );
         }
       }
-    } catch (e) {
-      debugPrint('[StreamResolver] Primary backend error: $e');
-    }
+    } catch (_) {}
 
-    // Strategy 2: Direct public Piped/Invidious instances for YouTube audio stream resolution
+    // Strategy 3: Public Piped instances for YouTube audio stream resolution
     final pipedInstances = [
       'https://pipedapi.kavin.rocks',
       'https://api.piped.privacy.com.de',
       'https://piped-api.lunar.icu',
     ];
 
-    if (videoId.isNotEmpty && !videoId.contains(' ')) {
+    if (videoId.length == 11 && !videoId.contains(' ')) {
       for (final instance in pipedInstances) {
         try {
           final res = await _client.get(
             Uri.parse('$instance/streams/$videoId'),
             headers: {'User-Agent': 'EchoMusic/1.0'},
-          ).timeout(const Duration(seconds: 5));
+          ).timeout(const Duration(seconds: 4));
 
           if (res.statusCode == 200) {
             final data = json.decode(res.body);
@@ -100,7 +132,7 @@ class StreamResolver {
       }
     }
 
-    // Strategy 3: Check if a direct verified preview/audio URL is present (e.g. from iTunes API search)
+    // Direct fallback if given and verified
     if (fallbackUrl != null && fallbackUrl.isNotEmpty && !fallbackUrl.contains('soundhelix.com')) {
       return StreamInfo(
         url: fallbackUrl,
@@ -110,9 +142,8 @@ class StreamResolver {
       );
     }
 
-    // NO MOCK DATA FALLBACK: Fail explicitly with descriptive error
     throw StreamResolutionException(
-      'Could not resolve playable audio stream for "${title ?? videoId}". InnerTube stream unavailable.',
+      'Could not resolve playable audio stream for "${title ?? videoId}".',
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 import '../../shared/models/song.dart';
 import '../constants/api_constants.dart';
 
@@ -14,8 +15,11 @@ abstract class MusicRepository {
 
 class MusicRepositoryImpl implements MusicRepository {
   final http.Client _client;
+  final YoutubeExplode _yt;
 
-  MusicRepositoryImpl([http.Client? client]) : _client = client ?? http.Client();
+  MusicRepositoryImpl({http.Client? client, YoutubeExplode? yt})
+      : _client = client ?? http.Client(),
+        _yt = yt ?? YoutubeExplode();
 
   @override
   List<Song> getFeaturedCarouselSongs() => [
@@ -152,11 +156,35 @@ class MusicRepositoryImpl implements MusicRepository {
   Future<List<Song>> searchSongs(String query) async {
     if (query.trim().isEmpty) return [];
 
-    // Strategy 1: Local development proxy server
+    // Strategy 1: Direct on-device YouTube search via YoutubeExplode
+    try {
+      final searchList = await _yt.search.search(query);
+      if (searchList.isNotEmpty) {
+        return searchList.map((video) {
+          final thumb = video.thumbnails.highResUrl.isNotEmpty
+              ? video.thumbnails.highResUrl
+              : (video.thumbnails.mediumResUrl.isNotEmpty
+                  ? video.thumbnails.mediumResUrl
+                  : 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600');
+          return Song(
+            id: video.id.value,
+            title: video.title,
+            artist: video.author,
+            album: 'YouTube Music',
+            coverUrl: thumb,
+            duration: video.duration ?? const Duration(minutes: 3, seconds: 30),
+          );
+        }).toList();
+      }
+    } catch (e) {
+      debugPrint('[MusicRepository] YoutubeExplode search error: $e');
+    }
+
+    // Strategy 2: Local development proxy server
     try {
       final res = await _client.get(
         Uri.parse('${ApiConstants.searchEndpoint}?q=${Uri.encodeComponent(query)}'),
-      ).timeout(const Duration(seconds: 6));
+      ).timeout(const Duration(seconds: 4));
 
       if (res.statusCode == 200) {
         final List list = json.decode(res.body);
@@ -166,16 +194,16 @@ class MusicRepositoryImpl implements MusicRepository {
       }
     } catch (_) {}
 
-    // Strategy 2: Direct public iTunes API fallback with real audio previews
+    // Strategy 3: Direct public iTunes API fallback (metadata only, full audio resolved via YouTube)
     try {
       final res = await _client.get(
         Uri.parse('${ApiConstants.directItunesSearch}?term=${Uri.encodeComponent(query)}&entity=song&limit=25'),
-      ).timeout(const Duration(seconds: 6));
+      ).timeout(const Duration(seconds: 4));
 
       if (res.statusCode == 200) {
         final data = json.decode(res.body);
         final List results = data['results'] ?? [];
-        return results.where((item) => item['previewUrl'] != null).map((item) {
+        return results.map((item) {
           final art = (item['artworkUrl100'] as String?)?.replaceAll('100x100bb', '600x600bb') ?? '';
           return Song(
             id: item['trackId'].toString(),
@@ -183,7 +211,6 @@ class MusicRepositoryImpl implements MusicRepository {
             artist: item['artistName'] ?? 'Unknown',
             album: item['collectionName'] ?? '',
             coverUrl: art.isNotEmpty ? art : 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600',
-            streamUrl: item['previewUrl'] ?? '',
             duration: Duration(milliseconds: item['trackTimeMillis'] ?? 180000),
           );
         }).toList();
