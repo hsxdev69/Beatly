@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:audioplayers/audioplayers.dart';
 import '../../shared/models/song.dart';
 import '../network/music_repository.dart';
 import '../database/local_storage.dart';
+import 'audio_handler.dart';
 
 class AudioPlayerService extends ChangeNotifier {
-  final AudioPlayer _player = AudioPlayer();
+  final EchoAudioHandler _handler;
   final MusicRepository _repository;
   final LocalStorage _storage;
 
@@ -15,89 +15,75 @@ class AudioPlayerService extends ChangeNotifier {
   bool _isPlaying = false;
   Duration _position = Duration.zero;
   Duration _duration = Duration.zero;
-  bool _isShuffle = false;
-  bool _isRepeat = false;
   Set<String> _favoriteIds = {};
 
   StreamSubscription? _posSub;
   StreamSubscription? _durSub;
-  StreamSubscription? _stateSub;
-  StreamSubscription? _completeSub;
+  StreamSubscription? _playSub;
+  StreamSubscription? _songSub;
 
   AudioPlayerService({
+    required EchoAudioHandler handler,
     required MusicRepository repository,
     required LocalStorage storage,
-  })  : _repository = repository,
+  })  : _handler = handler,
+        _repository = repository,
         _storage = storage {
     _favoriteIds = _storage.getFavoriteIds();
-    _initAudioListeners();
+    _listenToHandlerEvents();
   }
 
   // Getters
-  Song? get currentSong => _currentSong;
-  List<Song> get queue => _queue;
+  Song? get currentSong => _currentSong ?? _handler.currentSong;
+  List<Song> get queue => _queue.isNotEmpty ? _queue : _handler.currentQueue;
   bool get isPlaying => _isPlaying;
   Duration get position => _position;
   Duration get duration => _duration;
-  bool get isShuffle => _isShuffle;
-  bool get isRepeat => _isRepeat;
+  bool get isShuffle => _handler.isShuffle;
+  bool get isRepeat => _handler.isRepeat;
   Set<String> get favoriteIds => _favoriteIds;
   bool isFavorite(String id) => _favoriteIds.contains(id);
 
-  void _initAudioListeners() {
-    _posSub = _player.onPositionChanged.listen((pos) {
+  void _listenToHandlerEvents() {
+    _songSub = _handler.currentSongStream.listen((song) {
+      _currentSong = song;
+      _queue = _handler.currentQueue;
+      if (song != null) {
+        _storage.addRecentlyPlayed(song);
+        if (song.lyrics.isEmpty) {
+          _fetchLyrics(song);
+        }
+      }
+      notifyListeners();
+    });
+
+    _posSub = _handler.positionStream.listen((pos) {
       _position = pos;
       notifyListeners();
     });
 
-    _durSub = _player.onDurationChanged.listen((dur) {
-      _duration = dur;
-      notifyListeners();
-    });
-
-    _stateSub = _player.onPlayerStateChanged.listen((state) {
-      _isPlaying = (state == PlayerState.playing);
-      notifyListeners();
-    });
-
-    _completeSub = _player.onPlayerComplete.listen((_) {
-      if (_isRepeat && _currentSong != null) {
-        playSong(_currentSong!);
-      } else {
-        next();
+    _durSub = _handler.durationStream.listen((dur) {
+      if (dur != null) {
+        _duration = dur;
+        notifyListeners();
       }
     });
-  }
 
-  Future<void> setQueue(List<Song> newQueue) async {
-    _queue = List.from(newQueue);
-    notifyListeners();
+    _playSub = _handler.isPlayingStream.listen((playing) {
+      _isPlaying = playing;
+      notifyListeners();
+    });
   }
 
   Future<void> playSong(Song song, [List<Song>? contextQueue]) async {
-    if (contextQueue != null && contextQueue.isNotEmpty) {
-      _queue = List.from(contextQueue);
-    } else if (!_queue.any((s) => s.id == song.id)) {
-      _queue.add(song);
-    }
-
     _currentSong = song;
     _position = Duration.zero;
+    if (contextQueue != null) {
+      _queue = List.from(contextQueue);
+    }
     notifyListeners();
 
-    _storage.addRecentlyPlayed(song);
-
-    // Fetch lyrics asynchronously if not already loaded
-    if (song.lyrics.isEmpty) {
-      _fetchLyrics(song);
-    }
-
-    try {
-      await _player.stop();
-      await _player.play(UrlSource(song.audioUrl));
-    } catch (e) {
-      debugPrint("AudioPlayer play error: $e");
-    }
+    await _handler.playSong(song, contextQueue);
   }
 
   Future<void> _fetchLyrics(Song song) async {
@@ -110,48 +96,34 @@ class AudioPlayerService extends ChangeNotifier {
 
   Future<void> playPause() async {
     if (_isPlaying) {
-      await _player.pause();
+      await _handler.pause();
     } else {
       if (_currentSong != null) {
-        if (_player.state == PlayerState.paused) {
-          await _player.resume();
-        } else {
-          await playSong(_currentSong!);
-        }
+        await _handler.play();
       }
     }
   }
 
   Future<void> seek(Duration pos) async {
-    await _player.seek(pos);
+    await _handler.seek(pos);
   }
 
   void next() {
-    if (_queue.isEmpty || _currentSong == null) return;
-    int idx = _queue.indexWhere((s) => s.id == _currentSong!.id);
-    if (idx == -1) idx = 0;
-    int nextIdx = (idx + 1) % _queue.length;
-    playSong(_queue[nextIdx]);
+    _handler.skipToNext();
   }
 
   void prev() {
-    if (_queue.isEmpty || _currentSong == null) return;
-    int idx = _queue.indexWhere((s) => s.id == _currentSong!.id);
-    if (idx == -1) idx = 0;
-    int prevIdx = (idx - 1 + _queue.length) % _queue.length;
-    playSong(_queue[prevIdx]);
+    _handler.skipToPrevious();
   }
 
   void toggleShuffle() {
-    _isShuffle = !_isShuffle;
-    if (_isShuffle && _queue.length > 1) {
-      _queue.shuffle();
-    }
+    _handler.toggleShuffle();
+    _queue = _handler.currentQueue;
     notifyListeners();
   }
 
   void toggleRepeat() {
-    _isRepeat = !_isRepeat;
+    _handler.toggleRepeat();
     notifyListeners();
   }
 
@@ -162,7 +134,8 @@ class AudioPlayerService extends ChangeNotifier {
   }
 
   void addToQueue(Song song) {
-    _queue.add(song);
+    _handler.addToQueue(song);
+    _queue = _handler.currentQueue;
     notifyListeners();
   }
 
@@ -170,9 +143,8 @@ class AudioPlayerService extends ChangeNotifier {
   void dispose() {
     _posSub?.cancel();
     _durSub?.cancel();
-    _stateSub?.cancel();
-    _completeSub?.cancel();
-    _player.dispose();
+    _playSub?.cancel();
+    _songSub?.cancel();
     super.dispose();
   }
 }

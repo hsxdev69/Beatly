@@ -2,33 +2,46 @@ class Song {
   final String id;
   final String title;
   final String artist;
-  final String album;
-  final String coverUrl;
-  final String audioUrl;
-  final Duration duration;
+  final String? album;
+  final String thumbnailUrl;
+  final Duration? duration;
+  final String? streamUrl;
+  final bool isLiked;
+  final DateTime? playedAt;
   final String? plays;
   final List<LyricLine> lyrics;
+
+  // Compatibility getters
+  String get coverUrl => thumbnailUrl;
+  String get audioUrl => streamUrl ?? '';
 
   const Song({
     required this.id,
     required this.title,
     required this.artist,
-    required this.album,
-    required this.coverUrl,
-    required this.audioUrl,
-    required this.duration,
+    this.album,
+    String? thumbnailUrl,
+    String? coverUrl,
+    this.duration,
+    String? streamUrl,
+    String? audioUrl,
+    this.isLiked = false,
+    this.playedAt,
     this.plays,
     this.lyrics = const [],
-  });
+  })  : thumbnailUrl = thumbnailUrl ?? coverUrl ?? '',
+        streamUrl = streamUrl ?? audioUrl;
 
   Song copyWith({
     String? id,
     String? title,
     String? artist,
     String? album,
-    String? coverUrl,
-    String? audioUrl,
+    String? thumbnailUrl,
     Duration? duration,
+    String? streamUrl,
+    bool? isLiked,
+    DateTime? playedAt,
     String? plays,
     List<LyricLine>? lyrics,
   }) {
@@ -37,35 +50,46 @@ class Song {
       title: title ?? this.title,
       artist: artist ?? this.artist,
       album: album ?? this.album,
-      coverUrl: coverUrl ?? this.coverUrl,
-      audioUrl: audioUrl ?? this.audioUrl,
+      thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
       duration: duration ?? this.duration,
+      streamUrl: streamUrl ?? this.streamUrl,
+      isLiked: isLiked ?? this.isLiked,
+      playedAt: playedAt ?? this.playedAt,
       plays: plays ?? this.plays,
       lyrics: lyrics ?? this.lyrics,
     );
   }
 
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'title': title,
-        'artist': artist,
-        'album': album,
-        'coverUrl': coverUrl,
-        'audioUrl': audioUrl,
-        'durationSeconds': duration.inSeconds,
-        'plays': plays,
-      };
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'title': title,
+      'artist': artist,
+      'album': album,
+      'thumbnail_url': thumbnailUrl,
+      'duration_ms': duration?.inMilliseconds,
+      'stream_url': streamUrl,
+      'is_liked': isLiked ? 1 : 0,
+      'played_at': playedAt?.toIso8601String(),
+    };
+  }
 
-  factory Song.fromJson(Map<String, dynamic> json) => Song(
-        id: json['id']?.toString() ?? '',
-        title: json['title'] ?? 'Unknown',
-        artist: json['artist'] ?? 'Unknown',
-        album: json['album'] ?? '',
-        coverUrl: json['coverUrl'] ?? '',
-        audioUrl: json['audioUrl'] ?? '',
-        duration: Duration(seconds: json['durationSeconds'] ?? 180),
-        plays: json['plays'],
-      );
+  factory Song.fromMap(Map<String, dynamic> map) {
+    return Song(
+      id: map['id'] ?? '',
+      title: map['title'] ?? 'Unknown',
+      artist: map['artist'] ?? 'Unknown',
+      album: map['album'],
+      thumbnailUrl: map['thumbnail_url'] ?? '',
+      duration: map['duration_ms'] != null ? Duration(milliseconds: map['duration_ms']) : null,
+      streamUrl: map['stream_url'],
+      isLiked: (map['is_liked'] ?? 0) == 1,
+      playedAt: map['played_at'] != null ? DateTime.tryParse(map['played_at']) : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() => toMap();
+  factory Song.fromJson(Map<String, dynamic> json) => Song.fromMap(json);
 }
 
 class LyricLine {
@@ -83,18 +107,4 @@ class LyricLine {
         time: Duration(milliseconds: json['timeMs'] ?? 0),
         text: json['text'] ?? '',
       );
-}
-
-class Playlist {
-  final String id;
-  final String name;
-  final String coverUrl;
-  final List<Song> songs;
-
-  const Playlist({
-    required this.id,
-    required this.name,
-    required this.coverUrl,
-    required this.songs,
-  });
 }

@@ -89,6 +89,25 @@ class EchoMusicHandler(http.server.SimpleHTTPRequestHandler):
                 self._send_json({'error': str(e), 'syncedLyrics': '', 'plainLyrics': ''})
             return
 
+        # API: Stream resolver proxy
+        if parsed.path == '/api/stream':
+            qs = urllib.parse.parse_qs(parsed.query)
+            vid = qs.get('id', [''])[0]
+            stream_url = None
+            for piped in ['https://pipedapi.kavin.rocks', 'https://api.piped.privacy.com.de', 'https://piped-api.lunar.icu']:
+                try:
+                    req = urllib.request.Request(f"{piped}/streams/{vid}", headers={'User-Agent': 'Mozilla/5.0'})
+                    with urllib.request.urlopen(req, timeout=4) as res:
+                        data = json.loads(res.read().decode('utf-8'))
+                    audio_streams = data.get('audioStreams', [])
+                    if audio_streams:
+                        stream_url = audio_streams[0].get('url')
+                        break
+                except Exception:
+                    pass
+            self._send_json({'streamUrl': stream_url or '', 'mimeType': 'audio/webm', 'bitrate': 160000, 'durationSeconds': 240})
+            return
+
         return super().do_GET()
 
     def _send_json(self, data):

@@ -77,7 +77,7 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 20),
             scrollDirection: Axis.horizontal,
             itemCount: _moods.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            separatorBuilder: (_, index) => const SizedBox(width: 8),
             itemBuilder: (context, index) {
               final mood = _moods[index];
               final isSelected = mood == _selectedMood;

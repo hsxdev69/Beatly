@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/database/local_storage.dart';
 import '../core/network/music_repository.dart';
+import '../core/services/audio_handler.dart';
 import '../core/services/audio_player_service.dart';
 import '../features/home/presentation/home_screen.dart';
 import '../features/search/presentation/search_screen.dart';
@@ -11,8 +12,13 @@ import 'theme/app_theme.dart';
 
 class EchoMusicApp extends StatefulWidget {
   final LocalStorage storage;
+  final EchoAudioHandler audioHandler;
 
-  const EchoMusicApp({super.key, required this.storage});
+  const EchoMusicApp({
+    super.key,
+    required this.storage,
+    required this.audioHandler,
+  });
 
   @override
   State<EchoMusicApp> createState() => _EchoMusicAppState();
@@ -24,12 +30,14 @@ class _EchoMusicAppState extends State<EchoMusicApp> {
     return MultiProvider(
       providers: [
         Provider<LocalStorage>.value(value: widget.storage),
+        Provider<EchoAudioHandler>.value(value: widget.audioHandler),
         Provider<MusicRepository>(create: (_) => MusicRepositoryImpl()),
         ChangeNotifierProvider<AudioPlayerService>(
           create: (ctx) {
             final repo = ctx.read<MusicRepository>();
             final storage = ctx.read<LocalStorage>();
-            final service = AudioPlayerService(repository: repo, storage: storage);
+            final handler = ctx.read<EchoAudioHandler>();
+            final service = AudioPlayerService(handler: handler, repository: repo, storage: storage);
             // Default initial track
             final initialSongs = repo.getFeaturedCarouselSongs();
             service.playSong(initialSongs[2], initialSongs);

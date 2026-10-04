@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/services/audio_player_service.dart';
@@ -52,7 +51,7 @@ class _ApplePlayerScreenState extends State<ApplePlayerScreen> {
           Image.network(
             song.coverUrl,
             fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(color: const Color(0xFF1E202B)),
+            errorBuilder: (_, error, stackTrace) => Container(color: const Color(0xFF1E202B)),
           ),
 
           // Gradient scrim dark overlay
@@ -222,7 +221,7 @@ class _ApplePlayerScreenState extends State<ApplePlayerScreen> {
                               style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 13, fontWeight: FontWeight.w500),
                             ),
                             Text(
-                              _formatTime(player.duration > Duration.zero ? player.duration : song.duration),
+                              _formatTime(player.duration > Duration.zero ? player.duration : (song.duration ?? Duration.zero)),
                               style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 13, fontWeight: FontWeight.w500),
                             ),
                           ],
