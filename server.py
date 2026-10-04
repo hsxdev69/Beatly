@@ -89,23 +89,65 @@ class EchoMusicHandler(http.server.SimpleHTTPRequestHandler):
                 self._send_json({'error': str(e), 'syncedLyrics': '', 'plainLyrics': ''})
             return
 
-        # API: Stream resolver proxy
+        # API: Stream resolver proxy (InnerTube & yt_dlp real stream extraction)
         if parsed.path == '/api/stream':
             qs = urllib.parse.parse_qs(parsed.query)
             vid = qs.get('id', [''])[0]
+            query = qs.get('q', [''])[0]
             stream_url = None
-            for piped in ['https://pipedapi.kavin.rocks', 'https://api.piped.privacy.com.de', 'https://piped-api.lunar.icu']:
-                try:
-                    req = urllib.request.Request(f"{piped}/streams/{vid}", headers={'User-Agent': 'Mozilla/5.0'})
-                    with urllib.request.urlopen(req, timeout=4) as res:
-                        data = json.loads(res.read().decode('utf-8'))
-                    audio_streams = data.get('audioStreams', [])
-                    if audio_streams:
-                        stream_url = audio_streams[0].get('url')
-                        break
-                except Exception:
-                    pass
-            self._send_json({'streamUrl': stream_url or '', 'mimeType': 'audio/webm', 'bitrate': 160000, 'durationSeconds': 240})
+            mime_type = 'audio/mp4'
+            duration_sec = 240
+
+            # Strategy 1: yt_dlp direct stream resolver
+            try:
+                import yt_dlp
+                target = f"https://www.youtube.com/watch?v={vid}" if (vid and len(vid) == 11 and ' ' not in vid) else f"ytsearch1:{query or vid}"
+                ydl_opts = {
+                    'format': 'bestaudio[ext=m4a]/bestaudio/best',
+                    'quiet': True,
+                    'no_warnings': True,
+                    'noplaylist': True,
+                }
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    info = ydl.extract_info(target, download=False)
+                    entry = info['entries'][0] if 'entries' in info else info
+                    resolved = entry.get('url')
+                    if resolved:
+                        stream_url = resolved
+                        duration_sec = int(entry.get('duration', 240))
+                        mime_type = 'audio/mp4' if entry.get('ext') == 'm4a' else 'audio/webm'
+            except Exception as e:
+                print(f"[StreamResolver] yt_dlp exception: {e}")
+
+            # Strategy 2: Piped / Invidious fallback if yt_dlp didn't resolve
+            if not stream_url and vid:
+                for piped in ['https://pipedapi.kavin.rocks', 'https://api.piped.privacy.com.de', 'https://piped-api.lunar.icu']:
+                    try:
+                        req = urllib.request.Request(f"{piped}/streams/{vid}", headers={'User-Agent': 'Mozilla/5.0'})
+                        with urllib.request.urlopen(req, timeout=4) as res:
+                            data = json.loads(res.read().decode('utf-8'))
+                        audio_streams = data.get('audioStreams', [])
+                        if audio_streams:
+                            stream_url = audio_streams[0].get('url')
+                            mime_type = audio_streams[0].get('mimeType', 'audio/webm')
+                            break
+                    except Exception:
+                        pass
+
+            if stream_url:
+                self._send_json({
+                    'success': True,
+                    'streamUrl': stream_url,
+                    'mimeType': mime_type,
+                    'bitrate': 160000,
+                    'durationSeconds': duration_sec,
+                })
+            else:
+                self._send_json({
+                    'success': False,
+                    'error': f'Failed to resolve stream for {vid or query}',
+                    'streamUrl': '',
+                })
             return
 
         return super().do_GET()

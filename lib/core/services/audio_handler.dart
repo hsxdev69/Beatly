@@ -17,7 +17,13 @@ class EchoAudioHandler extends BaseAudioHandler with SeekHandler {
   bool _isRepeat = false;
 
   final _songChangeController = StreamController<Song?>.broadcast();
+  final _errorController = StreamController<String>.broadcast();
+  final _loadingController = StreamController<bool>.broadcast();
+
   Stream<Song?> get currentSongStream => _songChangeController.stream;
+  Stream<String> get errorStream => _errorController.stream;
+  Stream<bool> get loadingStream => _loadingController.stream;
+
   Song? get currentSong => _currentSong;
   List<Song> get currentQueue => _queue;
   bool get isShuffle => _isShuffle;
@@ -83,6 +89,8 @@ class EchoAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   Future<void> playSong(Song song, [List<Song>? contextQueue]) async {
+    _loadingController.add(true);
+
     if (contextQueue != null && contextQueue.isNotEmpty) {
       _queue = List.from(contextQueue);
       _currentIndex = _queue.indexWhere((s) => s.id == song.id);
@@ -108,15 +116,29 @@ class EchoAudioHandler extends BaseAudioHandler with SeekHandler {
     );
     mediaItem.add(mediaItemObj);
 
-    // Resolve real audio stream (audio/webm, audio/mp4)
-    final streamInfo = await _resolver.resolveStream(song.id, fallbackUrl: song.audioUrl);
-
     try {
+      // Step 2: Fetch actual playable audio stream URL from InnerTube / backend
+      final streamInfo = await _resolver.resolveStream(
+        song.id,
+        title: song.title,
+        artist: song.artist,
+        fallbackUrl: song.audioUrl,
+      );
+
+      debugPrint("[EchoAudioHandler] Playing live stream: ${streamInfo.url.substring(0, streamInfo.url.length.clamp(0, 70))}...");
+
       await _player.stop();
+      // Pass dynamic stream URL directly into AudioPlayer.setUrl instead of static mock assets
       await _player.setUrl(streamInfo.url);
       await _player.play();
-    } catch (e) {
-      debugPrint("just_audio playback error: $e");
+    } catch (e, stack) {
+      final errorMsg = "Stream resolution error for '${song.title}': $e";
+      debugPrint("$errorMsg\n$stack");
+      // Step 3: Log error and notify user instead of falling back to mock sound
+      _errorController.add("Stream unavailable for '${song.title}'. Please check your connection.");
+      await _player.stop();
+    } finally {
+      _loadingController.add(false);
     }
   }
 

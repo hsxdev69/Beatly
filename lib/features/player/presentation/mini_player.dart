@@ -88,14 +88,24 @@ class FloatingDockAndMiniPlayer extends StatelessWidget {
                             ],
                           ),
                         ),
-                        IconButton(
-                          icon: Icon(
-                            player.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                            color: const Color(0xFF111827),
-                            size: 26,
+                        if (player.isLoading)
+                          const Padding(
+                            padding: EdgeInsets.all(10),
+                            child: SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF111827)),
+                            ),
+                          )
+                        else
+                          IconButton(
+                            icon: Icon(
+                              player.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                              color: const Color(0xFF111827),
+                              size: 26,
+                            ),
+                            onPressed: player.playPause,
                           ),
-                          onPressed: player.playPause,
-                        ),
                         IconButton(
                           icon: const Icon(Icons.skip_next_rounded, color: Color(0xFF111827), size: 26),
                           onPressed: player.next,

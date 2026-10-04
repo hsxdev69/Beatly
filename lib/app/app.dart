@@ -37,11 +37,7 @@ class _EchoMusicAppState extends State<EchoMusicApp> {
             final repo = ctx.read<MusicRepository>();
             final storage = ctx.read<LocalStorage>();
             final handler = ctx.read<EchoAudioHandler>();
-            final service = AudioPlayerService(handler: handler, repository: repo, storage: storage);
-            // Default initial track
-            final initialSongs = repo.getFeaturedCarouselSongs();
-            service.playSong(initialSongs[2], initialSongs);
-            return service;
+            return AudioPlayerService(handler: handler, repository: repo, storage: storage);
           },
         ),
       ],

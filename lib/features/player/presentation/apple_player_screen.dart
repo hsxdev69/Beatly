@@ -233,6 +233,21 @@ class _ApplePlayerScreenState extends State<ApplePlayerScreen> {
 
                 const SizedBox(height: 20),
 
+                if (player.errorMessage != null)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 12, left: 30, right: 30),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withValues(alpha: 0.85),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      player.errorMessage!,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500),
+                    ),
+                  ),
+
                 // Apple Big White Controls: |<<   ▶/❚❚   >>|
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 40),
@@ -245,11 +260,17 @@ class _ApplePlayerScreenState extends State<ApplePlayerScreen> {
                       ),
                       GestureDetector(
                         onTap: player.playPause,
-                        child: Icon(
-                          player.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                          size: 64,
-                          color: Colors.white,
-                        ),
+                        child: player.isLoading
+                            ? const SizedBox(
+                                width: 56,
+                                height: 56,
+                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3),
+                              )
+                            : Icon(
+                                player.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                                size: 64,
+                                color: Colors.white,
+                              ),
                       ),
                       IconButton(
                         icon: const Icon(Icons.fast_forward_rounded, size: 48, color: Colors.white),

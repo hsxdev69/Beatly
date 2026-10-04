@@ -20,13 +20,12 @@ class MusicRepositoryImpl implements MusicRepository {
   @override
   List<Song> getFeaturedCarouselSongs() => [
         const Song(
-          id: 'khalasi',
+          id: 't7wSjy9Lv-o',
           title: 'Khalasi | Coke Studio Bharat',
           artist: 'Aditya Gadhvi, Achint',
           album: 'Coke Studio Bharat',
           coverUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80',
-          audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-          duration: Duration(minutes: 4, seconds: 12),
+          duration: Duration(minutes: 4, seconds: 24),
           lyrics: [
             LyricLine(time: Duration(seconds: 0), text: "♪ Khalasi Intro - Coke Studio ♪"),
             LyricLine(time: Duration(seconds: 12), text: "Arere rang chhe, rang chhe"),
@@ -38,21 +37,19 @@ class MusicRepositoryImpl implements MusicRepository {
           ],
         ),
         const Song(
-          id: 'fakira',
+          id: 'f6vQ6t0GgG0',
           title: 'Fakira',
           artist: 'Sanam Puri, Vishal-Shekhar, Neeti Mohan',
           album: 'Student of the Year 2',
           coverUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&auto=format&fit=crop&q=80',
-          audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
           duration: Duration(minutes: 4, seconds: 43),
         ),
         const Song(
-          id: 'gtavi',
+          id: 'dQw4w9WgXcQ',
           title: 'Last Thing You Need (from GTAVI: The Album)',
           artist: 'Morgan Wallen, Grand Theft Auto VI',
           album: 'Grand Theft Auto VI: The Album',
           coverUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80',
-          audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
           duration: Duration(minutes: 3, seconds: 16),
           lyrics: [
             LyricLine(time: Duration(seconds: 0), text: "Bad for your heart and good for your sheets"),
@@ -69,39 +66,35 @@ class MusicRepositoryImpl implements MusicRepository {
   @override
   List<Song> getForgottenFavorites() => [
         const Song(
-          id: 'vaaroon',
+          id: 'H7_1-8jRk7Y',
           title: 'Vaaroon Forever (From "Mirzapur Th...")',
-          artist: 'Anand Bhaskar, Romy, Shreya Ghoshal, Gi...',
+          artist: 'Anand Bhaskar, Romy, Shreya Ghoshal',
           album: 'Mirzapur',
           coverUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80',
-          audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
           duration: Duration(minutes: 3, seconds: 45),
         ),
         const Song(
-          id: 'bairan',
+          id: 'e-ORhEE9VVg',
           title: 'Bairan',
           artist: 'Banjaare',
           album: 'Banjaare Sessions',
           coverUrl: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=600&auto=format&fit=crop&q=80',
-          audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3',
           duration: Duration(minutes: 4, seconds: 10),
         ),
         const Song(
-          id: 'ghar_more',
+          id: 'ubx2KqSgMHg',
           title: 'Ghar More Pardesiya',
           artist: 'Pritam, Shreya Ghoshal',
           album: 'Kalank',
           coverUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&auto=format&fit=crop&q=80',
-          audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3',
           duration: Duration(minutes: 5, seconds: 19),
         ),
         const Song(
-          id: 'sahiba',
+          id: '_mmsu9yZkQ4',
           title: 'Sahiba',
-          artist: 'Jasleen Royal, Stebin Ben, Vijay Deverako...',
+          artist: 'Jasleen Royal, Stebin Ben',
           album: 'Sahiba Single',
           coverUrl: 'https://images.unsplash.com/photo-1487180144351-b8472da7d491?w=600&auto=format&fit=crop&q=80',
-          audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3',
           duration: Duration(minutes: 3, seconds: 55),
         ),
       ];
@@ -109,54 +102,49 @@ class MusicRepositoryImpl implements MusicRepository {
   @override
   List<Song> getTop100Chart() => [
         const Song(
-          id: 'ts_1',
-          title: 'Patient Zero',
-          artist: 'Taylor Swift',
-          album: 'The Life of a Showgirl: The Encore',
+          id: 'k3g_WjLCsgo',
+          title: 'Pehle Bhi Main',
+          artist: 'Vishal Mishra, Raj Shekhar',
+          album: 'ANIMAL',
           plays: '833k plays',
           coverUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80',
-          audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-12.mp3',
-          duration: Duration(minutes: 3, seconds: 40),
+          duration: Duration(minutes: 4, seconds: 10),
         ),
         const Song(
-          id: 'ts_2',
-          title: 'Cleveland!',
-          artist: 'Taylor Swift',
-          album: 'The Life of a Showgirl: The Encore',
+          id: 'HR1Z2w7x-fA',
+          title: 'Satranga',
+          artist: 'Arijit Singh, Shreyas Puranik',
+          album: 'ANIMAL',
           plays: '625k plays',
           coverUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80',
-          audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-13.mp3',
-          duration: Duration(minutes: 3, seconds: 22),
+          duration: Duration(minutes: 4, seconds: 31),
         ),
         const Song(
-          id: 'ts_3',
-          title: 'Pink Clouding',
-          artist: 'Taylor Swift',
-          album: 'The Life of a Showgirl: The Encore',
+          id: 'VAdGW7QDJUI',
+          title: 'Chaleya',
+          artist: 'Arijit Singh, Shilpa Rao',
+          album: 'Jawan',
           plays: '500k plays',
           coverUrl: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=600&auto=format&fit=crop&q=80',
-          audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-14.mp3',
-          duration: Duration(minutes: 4, seconds: 5),
+          duration: Duration(minutes: 3, seconds: 20),
         ),
         const Song(
-          id: 'ts_4',
-          title: 'Babylon',
-          artist: 'Taylor Swift',
-          album: 'The Life of a Showgirl: The Encore',
+          id: 'hV74vYvXjbg',
+          title: 'Tum Kya Mile',
+          artist: 'Arijit Singh, Shreya Ghoshal',
+          album: 'Rocky Aur Rani Kii Prem Kahaani',
           plays: '416k plays',
           coverUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&auto=format&fit=crop&q=80',
-          audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3',
-          duration: Duration(minutes: 3, seconds: 50),
+          duration: Duration(minutes: 4, seconds: 37),
         ),
         const Song(
-          id: 'ts_5',
-          title: 'Choosin\' Texas',
-          artist: 'Ella Langley',
-          album: 'Hungover',
+          id: 'RLzC55ai0eo',
+          title: 'Heeriye',
+          artist: 'Jasleen Royal, Arijit Singh',
+          album: 'Heeriye Single',
           plays: '357k plays',
           coverUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80',
-          audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-16.mp3',
-          duration: Duration(minutes: 3, seconds: 12),
+          duration: Duration(minutes: 3, seconds: 14),
         ),
       ];
 
@@ -164,11 +152,11 @@ class MusicRepositoryImpl implements MusicRepository {
   Future<List<Song>> searchSongs(String query) async {
     if (query.trim().isEmpty) return [];
 
-    // Strategy 1: Try local development proxy server
+    // Strategy 1: Local development proxy server
     try {
       final res = await _client.get(
         Uri.parse('${ApiConstants.searchEndpoint}?q=${Uri.encodeComponent(query)}'),
-      ).timeout(const Duration(seconds: 4));
+      ).timeout(const Duration(seconds: 6));
 
       if (res.statusCode == 200) {
         final List list = json.decode(res.body);
@@ -178,10 +166,10 @@ class MusicRepositoryImpl implements MusicRepository {
       }
     } catch (_) {}
 
-    // Strategy 2: Direct public iTunes / YouTube Music API fallback
+    // Strategy 2: Direct public iTunes API fallback with real audio previews
     try {
       final res = await _client.get(
-        Uri.parse('${ApiConstants.directItunesSearch}?term=${Uri.encodeComponent(query)}&entity=song&limit=20'),
+        Uri.parse('${ApiConstants.directItunesSearch}?term=${Uri.encodeComponent(query)}&entity=song&limit=25'),
       ).timeout(const Duration(seconds: 6));
 
       if (res.statusCode == 200) {
@@ -195,7 +183,7 @@ class MusicRepositoryImpl implements MusicRepository {
             artist: item['artistName'] ?? 'Unknown',
             album: item['collectionName'] ?? '',
             coverUrl: art.isNotEmpty ? art : 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600',
-            audioUrl: item['previewUrl'] ?? '',
+            streamUrl: item['previewUrl'] ?? '',
             duration: Duration(milliseconds: item['trackTimeMillis'] ?? 180000),
           );
         }).toList();
@@ -213,7 +201,7 @@ class MusicRepositoryImpl implements MusicRepository {
     try {
       final res = await _client.get(
         Uri.parse('${ApiConstants.lyricsEndpoint}?track=${Uri.encodeComponent(title)}&artist=${Uri.encodeComponent(artist)}'),
-      ).timeout(const Duration(seconds: 4));
+      ).timeout(const Duration(seconds: 5));
 
       if (res.statusCode == 200) {
         final data = json.decode(res.body);
