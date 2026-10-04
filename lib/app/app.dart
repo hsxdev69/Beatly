@@ -4,10 +4,7 @@ import '../core/database/local_storage.dart';
 import '../core/network/music_repository.dart';
 import '../core/services/audio_handler.dart';
 import '../core/services/audio_player_service.dart';
-import '../features/home/presentation/home_screen.dart';
-import '../features/search/presentation/search_screen.dart';
-import '../features/library/presentation/library_screen.dart';
-import '../features/player/presentation/mini_player.dart';
+import 'router.dart';
 import 'theme/app_theme.dart';
 
 class EchoMusicApp extends StatefulWidget {
@@ -44,61 +41,10 @@ class _EchoMusicAppState extends State<EchoMusicApp> {
       child: MaterialApp(
         title: 'Echo Music',
         debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
+        theme: AppTheme.darkTheme,
         darkTheme: AppTheme.darkTheme,
-        home: const EchoMusicMainShell(),
-      ),
-    );
-  }
-}
-
-class EchoMusicMainShell extends StatefulWidget {
-  const EchoMusicMainShell({super.key});
-
-  @override
-  State<EchoMusicMainShell> createState() => _EchoMusicMainShellState();
-}
-
-class _EchoMusicMainShellState extends State<EchoMusicMainShell> {
-  int _activeTabIndex = 0;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF7F8FC),
-      body: Stack(
-        children: [
-          SafeArea(
-            bottom: false,
-            child: Column(
-              children: [
-                Expanded(
-                  child: IndexedStack(
-                    index: _activeTabIndex,
-                    children: const [
-                      HomeScreen(),
-                      SearchScreen(),
-                      LibraryScreen(),
-                    ],
-                  ),
-                ),
-                // Spacing above dock
-                const SizedBox(height: 140),
-              ],
-            ),
-          ),
-
-          // Floating mini-player and dock overlay
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: FloatingDockAndMiniPlayer(
-              activeIndex: _activeTabIndex,
-              onTabSelected: (index) => setState(() => _activeTabIndex = index),
-            ),
-          ),
-        ],
+        themeMode: ThemeMode.dark,
+        home: const MainNavigationShell(),
       ),
     );
   }

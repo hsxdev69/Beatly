@@ -12,9 +12,13 @@ class AppDimensions {
 
   // Corner Radii (as defined in Echo Music DESIGN.md)
   static const double radiusSmall = 12.0;
+  static const double radiusMedium = 16.0;
   static const double radiusCard = 24.0;
   static const double radiusLarge = 28.0;
+  static const double radiusDock = 34.0;
   static const double radiusPill = 999.0;
+
+  static const double paddingScreen = 20.0;
 
   static final BorderRadius borderSmall = BorderRadius.circular(radiusSmall);
   static final BorderRadius borderCard = BorderRadius.circular(radiusCard);

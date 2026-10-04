@@ -1,233 +1,218 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../../core/network/music_repository.dart';
-import '../../../../core/services/audio_player_service.dart';
-import '../../../../app/theme/colors.dart';
-import '../../../../app/theme/typography.dart';
+import '../../../app/theme/colors.dart';
+import '../../../app/theme/typography.dart';
+import '../../../app/theme/dimensions.dart';
+import '../../../core/network/music_repository.dart';
+import '../../../core/services/audio_player_service.dart';
+import '../../../shared/widgets/song_list_item.dart';
 
-class LibraryScreen extends StatelessWidget {
+class LibraryScreen extends StatefulWidget {
   const LibraryScreen({super.key});
 
   @override
+  State<LibraryScreen> createState() => _LibraryScreenState();
+}
+
+class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  void _showCreatePlaylistDialog(BuildContext context) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.darkSurfaceVariant,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusCard)),
+        title: const Text('New Playlist', style: AppTypography.titleLarge),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: 'Playlist name',
+            hintStyle: const TextStyle(color: AppColors.textTertiary),
+            enabledBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+            ),
+            focusedBorder: const UnderlineInputBorder(
+              borderSide: BorderSide(color: AppColors.primary),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            ),
+            onPressed: () {
+              Navigator.of(ctx).pop();
+            },
+            child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final player = context.watch<AudioPlayerService>();
     final repo = context.read<MusicRepository>();
-    final allSongs = [...repo.getFeaturedCarouselSongs(), ...repo.getForgottenFavorites(), ...repo.getTop100Chart()];
-    final likedSongs = allSongs.where((s) => player.isFavorite(s.id)).toList();
+    final player = context.watch<AudioPlayerService>();
+
+    final allSongs = [
+      ...repo.getFeaturedCarouselSongs(),
+      ...repo.getTop100Chart(),
+      ...repo.getForgottenFavorites(),
+    ];
+    final favorites = allSongs.where((s) => player.isFavorite(s.id)).toList();
+    final currentSong = player.currentSong;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {},
-        backgroundColor: const Color(0xFF1E202B),
-        elevation: 4,
-        shape: const CircleBorder(),
-        child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.only(top: 10, bottom: 20),
-        children: [
-          // Top Header
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('Library', style: AppTypography.headerLarge),
-                Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.history_rounded, size: 24, color: Color(0xFF2C3040)),
-                      onPressed: () {},
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.trending_up_rounded, size: 24, color: Color(0xFF2C3040)),
-                      onPressed: () {},
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.group_rounded, size: 24, color: Color(0xFF2C3040)),
-                      onPressed: () {},
-                    ),
-                    const SizedBox(width: 4),
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        image: DecorationImage(
-                          image: NetworkImage('https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'),
-                          fit: BoxFit.cover,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Top Bar
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16.0, 12.0, 16.0, 8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Your Library', style: AppTypography.displayLarge),
+                  IconButton(
+                    icon: const Icon(Icons.add_rounded, color: AppColors.textPrimary, size: 28),
+                    onPressed: () => _showCreatePlaylistDialog(context),
+                  ),
+                ],
+              ),
+            ),
+
+            // Tabs
+            TabBar(
+              controller: _tabController,
+              indicatorColor: AppColors.primary,
+              indicatorWeight: 3.0,
+              labelColor: AppColors.primary,
+              unselectedLabelColor: AppColors.textSecondary,
+              labelStyle: AppTypography.titleMedium.copyWith(fontSize: 14),
+              tabs: const [
+                Tab(text: 'Favorites'),
+                Tab(text: 'Playlists'),
+              ],
+            ),
+
+            // Tab Views
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  // Tab 1: Favorites
+                  favorites.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.favorite_border_rounded, size: 48, color: AppColors.textTertiary),
+                              const SizedBox(height: 12),
+                              const Text('No favorite songs yet', style: AppTypography.titleMedium),
+                              const SizedBox(height: 4),
+                              Text('Tap heart on any song to save it here', style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
+                            ],
+                          ),
+                        )
+                      : ListView.builder(
+                          physics: const BouncingScrollPhysics(),
+                          padding: const EdgeInsets.only(top: 8, bottom: AppDimensions.bottomNavTotalSpace),
+                          itemCount: favorites.length,
+                          itemBuilder: (context, index) {
+                            final song = favorites[index];
+                            final isPlaying = currentSong?.id == song.id;
+
+                            return SongListItem(
+                              song: song,
+                              isPlaying: isPlaying,
+                              onTap: () => player.playSong(song, favorites),
+                              onFavoriteToggle: () => player.toggleFavorite(song.id),
+                              onAddToQueue: () => player.addToQueue(song),
+                            );
+                          },
+                        ),
+
+                  // Tab 2: Playlists
+                  ListView(
+                    padding: const EdgeInsets.all(16.0),
+                    children: [
+                      // Liked songs collection card
+                      GestureDetector(
+                        onTap: () {
+                          if (favorites.isNotEmpty) {
+                            player.playSong(favorites.first, favorites);
+                          }
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: AppColors.darkSurfaceVariant,
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(color: AppColors.darkGlassBorder),
+                          ),
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 56,
+                                height: 56,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(14),
+                                  gradient: const LinearGradient(
+                                    colors: [Color(0xFFED5564), Color(0xFFFF7281)],
+                                  ),
+                                ),
+                                child: const Center(
+                                  child: Icon(Icons.favorite_rounded, color: Colors.white, size: 28),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text('Liked Songs', style: AppTypography.titleLarge),
+                                    const SizedBox(height: 4),
+                                    Text('${favorites.length} songs', style: AppTypography.bodySmall),
+                                  ],
+                                ),
+                              ),
+                              const Icon(Icons.play_circle_fill_rounded, color: AppColors.primary, size: 36),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          // Filter chips: Playlists, Songs, Albums, Artists, Local
-          SizedBox(
-            height: 38,
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              scrollDirection: Axis.horizontal,
-              children: [
-                _buildLibFilterChip('Playlists', true),
-                _buildLibFilterChip('Songs', false),
-                _buildLibFilterChip('Albums', false),
-                _buildLibFilterChip('Artists', false),
-                _buildLibFilterChip('Local', false),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 14),
-
-          // Date added sort pill
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: AppColors.pillLight,
-                    borderRadius: BorderRadius.circular(16),
+                    ],
                   ),
-                  child: const Text('Date added', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: AppColors.pillLight,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Icon(Icons.keyboard_arrow_up_rounded, size: 16),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-
-          const SizedBox(height: 18),
-
-          // 2-Column Grid: Liked, Downloaded, Exported, Cached, My top 50, My bottom 50, Local
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Expanded(child: _buildLibraryActionTile(Icons.favorite_rounded, 'Liked (${likedSongs.length})')),
-                    const SizedBox(width: 12),
-                    Expanded(child: _buildLibraryActionTile(Icons.check_circle_outline_rounded, 'Downloaded')),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(child: _buildLibraryActionTile(Icons.file_download_outlined, 'Exported')),
-                    const SizedBox(width: 12),
-                    Expanded(child: _buildLibraryActionTile(Icons.cached_rounded, 'Cached')),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(child: _buildLibraryActionTile(Icons.trending_up_rounded, 'My top 50')),
-                    const SizedBox(width: 12),
-                    Expanded(child: _buildLibraryActionTile(Icons.trending_down_rounded, 'My bottom 50')),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(child: _buildLibraryActionTile(Icons.folder_open_rounded, 'Local')),
-                    const SizedBox(width: 12),
-                    const Expanded(child: SizedBox()),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 26),
-
-          // Playlists section
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20),
-            child: Text('Playlists', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1E202B))),
-          ),
-          const SizedBox(height: 12),
-
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Image.network(
-                        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300',
-                        width: 130,
-                        height: 130,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    const Text('hello', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                    const Text('1 song', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLibFilterChip(String text, bool isSelected) {
-    return Container(
-      margin: const EdgeInsets.only(right: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: isSelected ? AppColors.primary : const Color(0xFFE9ECF4),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: isSelected ? Colors.white : const Color(0xFF3B4054),
-          fontWeight: FontWeight.w600,
-          fontSize: 13,
+          ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildLibraryActionTile(IconData icon, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-      decoration: BoxDecoration(
-        color: AppColors.cardLight,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: const Color(0xFF1E202B), size: 20),
-          const SizedBox(width: 10),
-          Text(
-            label,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: Color(0xFF1E202B)),
-          ),
-        ],
       ),
     );
   }

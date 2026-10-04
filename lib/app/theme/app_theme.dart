@@ -1,80 +1,74 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'colors.dart';
-
-class AppTypography {
-  static const TextStyle headerLarge = TextStyle(
-    fontSize: 26,
-    fontWeight: FontWeight.w800,
-    letterSpacing: -0.6,
-    color: AppColors.textPrimaryLight,
-  );
-
-  static const TextStyle sectionTitle = TextStyle(
-    fontSize: 13,
-    fontWeight: FontWeight.w800,
-    letterSpacing: 0.8,
-    color: Color(0xFF5A6076),
-  );
-
-  static const TextStyle songTitle = TextStyle(
-    fontSize: 14.5,
-    fontWeight: FontWeight.bold,
-    color: AppColors.textPrimaryLight,
-  );
-
-  static const TextStyle songSubtitle = TextStyle(
-    fontSize: 12.5,
-    color: AppColors.textSecondaryLight,
-  );
-
-  static const TextStyle playerTitle = TextStyle(
-    fontSize: 24,
-    fontWeight: FontWeight.w800,
-    letterSpacing: -0.4,
-    color: Colors.white,
-  );
-
-  static const TextStyle playerSubtitle = TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    color: Colors.white70,
-  );
-}
-
-class AppDimensions {
-  static const double radiusSmall = 10.0;
-  static const double radiusMedium = 16.0;
-  static const double radiusLarge = 22.0;
-  static const double radiusCard = 28.0;
-  static const double radiusDock = 34.0;
-
-  static const double paddingScreen = 20.0;
-}
+import 'typography.dart';
+import 'dimensions.dart';
 
 class AppTheme {
-  static ThemeData get lightTheme {
-    return ThemeData(
-      useMaterial3: true,
-      scaffoldBackgroundColor: AppColors.backgroundLight,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: AppColors.primary,
-        brightness: Brightness.light,
-        surface: AppColors.surfaceLight,
-      ),
-      fontFamily: 'sans-serif',
-    );
-  }
+  AppTheme._();
 
-  static ThemeData get darkTheme {
+  static ThemeData get darkTheme => createTheme(isPureBlack: false);
+  static ThemeData get pureBlackTheme => createTheme(isPureBlack: true);
+  static ThemeData get lightTheme => createTheme(isPureBlack: false);
+
+  static ThemeData createTheme({
+    bool isPureBlack = false,
+    Color seedColor = AppColors.primarySeed,
+  }) {
+    final bg = isPureBlack ? AppColors.pureBlackBackground : AppColors.darkBackground;
+    final surface = isPureBlack ? AppColors.pureBlackSurface : AppColors.darkSurface;
+    final surfaceVariant = isPureBlack ? const Color(0xFF141416) : AppColors.darkSurfaceVariant;
+
+    final colorScheme = ColorScheme.dark(
+      primary: seedColor,
+      onPrimary: Colors.white,
+      secondary: AppColors.accentBlue,
+      onSecondary: Colors.white,
+      surface: surface,
+      onSurface: AppColors.textPrimary,
+      surfaceContainerHighest: surfaceVariant,
+      onSurfaceVariant: AppColors.textSecondary,
+      error: AppColors.error,
+      onError: Colors.white,
+    );
+
     return ThemeData(
       useMaterial3: true,
-      scaffoldBackgroundColor: AppColors.backgroundDark,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: AppColors.accentIndigo,
-        brightness: Brightness.dark,
-        surface: AppColors.surfaceDark,
+      brightness: Brightness.dark,
+      scaffoldBackgroundColor: bg,
+      colorScheme: colorScheme,
+      cardColor: surfaceVariant,
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        systemOverlayStyle: SystemUiOverlayStyle.light,
+        titleTextStyle: AppTypography.headlineMedium,
+        iconTheme: IconThemeData(color: AppColors.textPrimary),
       ),
-      fontFamily: 'sans-serif',
+      cardTheme: CardThemeData(
+        color: AppColors.darkCard,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
+        ),
+        margin: EdgeInsets.zero,
+      ),
+      sliderTheme: SliderThemeData(
+        activeTrackColor: seedColor,
+        inactiveTrackColor: Colors.white.withValues(alpha: 0.15),
+        thumbColor: Colors.white,
+        overlayColor: seedColor.withValues(alpha: 0.2),
+        trackHeight: 4,
+        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(AppDimensions.radiusLarge)),
+        ),
+      ),
     );
   }
 }
